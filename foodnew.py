@@ -10,14 +10,13 @@ import requests
 from io import BytesIO
 import re
 
-# Set page config
 st.set_page_config(
     page_title="NutriSmart",
     page_icon="🥗",
     layout="wide",
 )
 
-# Custom CSS
+
 st.markdown("""
 <style>
     .main-header {
@@ -58,79 +57,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Load and preprocess the dataset
-@st.cache_data
-def load_data():
-    # Try different encodings to load the dataset
-    encodings_to_try = ['latin-1', 'ISO-8859-1', 'cp1252', 'utf-8-sig']
-    
-    for encoding in encodings_to_try:
-        try:
-            df = pd.read_csv("https://raw.githubusercontent.com/chandan232002/Health-based-food-recommendation-system-/main/IndianFoodDatasetXLSFinal%20(3).csv", 
-                            encoding=encoding)
-            st.success(f"Successfully loaded dataset with encoding: {encoding}")
-            
-            # Clean the data
-            df = df.dropna()
-            
-            # Convert numerical columns to appropriate data types
-            numerical_cols = ['Calories', 'Protein', 'Fat', 'Carbohydrates', 'Fiber', 'Sugar']
-            for col in numerical_cols:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-            
-            # Replace NaN values with column means
-            df[numerical_cols] = df[numerical_cols].fillna(df[numerical_cols].mean())
-            
-            # Clean the state column
-            df['State'] = df['State'].str.strip()
-            
-            return df
-        except Exception as e:
-            continue
-    
-    # If all encoding attempts fail, try to download the raw file
-    try:
-        import io
-        import requests
-        
-        url = "https://raw.githubusercontent.com/chandan232002/Health-based-food-recommendation-system-/main/IndianFoodDatasetXLSFinal%20(3).csv"
-        s = requests.get(url).content
-        
-        # Try to detect encoding
-        try:
-            import chardet
-            detected = chardet.detect(s)
-            encoding = detected['encoding']
-            st.info(f"Detected encoding: {encoding}")
-        except:
-            encoding = 'latin-1'  # Fallback encoding
-            
-        df = pd.read_csv(io.StringIO(s.decode(encoding)))
-        
-        # Clean the data
-        df = df.dropna()
-        
-        # Convert numerical columns to appropriate data types
-        numerical_cols = ['Calories', 'Protein', 'Fat', 'Carbohydrates', 'Fiber', 'Sugar']
-        for col in numerical_cols:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-        
-        # Replace NaN values with column means
-        df[numerical_cols] = df[numerical_cols].fillna(df[numerical_cols].mean())
-        
-        # Clean the state column
-        df['State'] = df['State'].str.strip()
-        
-        return df
-    except Exception as e:
-        st.error(f"All encoding attempts failed: {e}")
-        
-        # Last resort: Use a hardcoded sample dataset
-        st.warning("Using a sample dataset instead.")
-        return create_sample_dataset()
 
 def create_sample_dataset():
-    """Create a sample dataset when the original cannot be loaded"""
+    """Create a sample dataset"""
     data = {
         'Name': ['Butter Chicken', 'Palak Paneer', 'Idli Sambar', 'Masala Dosa', 'Biryani', 
                 'Chole Bhature', 'Tandoori Chicken', 'Rajma Chawal', 'Aloo Gobi', 'Pav Bhaji'],
@@ -154,34 +83,40 @@ def create_sample_dataset():
     
     return pd.DataFrame(data)
 
-# Get recommendations based on nutritional goals
+
+@st.cache_data
+def load_data():
+   
+    return create_sample_dataset()
+
+
 def get_recommendations(df, user_profile, dietary_preferences, excluded_ingredients, n_recommendations=5):
-    # Copy the dataset to avoid modifying the original
+    
     dataset = df.copy()
     
-    # Filter based on dietary preferences
+   
     if 'Vegetarian' in dietary_preferences and 'Non-Vegetarian' not in dietary_preferences:
         dataset = dataset[dataset['Diet'] == 'vegetarian']
     elif 'Non-Vegetarian' in dietary_preferences and 'Vegetarian' not in dietary_preferences:
         dataset = dataset[dataset['Diet'] == 'non vegetarian']
     
-    # Filter out excluded ingredients
+   
     if excluded_ingredients:
         for ingredient in excluded_ingredients:
             dataset = dataset[~dataset['Ingredients'].str.lower().str.contains(ingredient.lower())]
     
-    # If dataset is empty after filtering
+   
     if dataset.empty:
         return None
     
-    # Features to consider for recommendation
+    
     features = ['Calories', 'Protein', 'Fat', 'Carbohydrates', 'Fiber', 'Sugar']
     
-    # Standardize the features
+    
     scaler = StandardScaler()
     dataset_scaled = scaler.fit_transform(dataset[features])
     
-    # Define ideal nutritional profile based on user input
+   
     ideal_profile = np.array([
         user_profile['calorie_goal'],
         user_profile['protein_goal'],
@@ -191,22 +126,22 @@ def get_recommendations(df, user_profile, dietary_preferences, excluded_ingredie
         user_profile['sugar_goal']
     ]).reshape(1, -1)
     
-    # Standardize the ideal profile
+   
     ideal_profile_scaled = scaler.transform(ideal_profile)
     
-    # Calculate similarity scores
+   
     similarity_scores = cosine_similarity(dataset_scaled, ideal_profile_scaled)
     dataset['similarity'] = similarity_scores
     
-    # Get top recommendations
+  
     recommendations = dataset.sort_values('similarity', ascending=False).head(n_recommendations)
     
     return recommendations
 
-# Create meal plan from recommendations
+
 def create_meal_plan(recommendations, days=3):
-    # If not enough recommendations, adjust days
-    if len(recommendations) < days * 3:  # Assuming 3 meals per day
+    
+    if len(recommendations) < days * 3:  
         days = len(recommendations) // 3
         if days == 0:
             days = 1
@@ -225,7 +160,7 @@ def create_meal_plan(recommendations, days=3):
     
     return meal_plan
 
-# Calculate nutritional stats
+
 def calculate_stats(meal_plan):
     stats = {
         "Total Calories": 0,
@@ -246,14 +181,14 @@ def calculate_stats(meal_plan):
                 stats["Total Fiber"] += meal["Fiber"]
                 stats["Total Sugar"] += meal["Sugar"]
     
-    # Calculate per day averages
+    
     days = len(meal_plan)
     for stat in stats:
         stats[stat] = stats[stat] / days
     
     return stats
 
-# Function to display meal plan
+
 def display_meal_plan(meal_plan, user_profile):
     st.markdown("<h2 class='section-header'>Your Personalized Meal Plan</h2>", unsafe_allow_html=True)
     
@@ -276,7 +211,7 @@ def display_meal_plan(meal_plan, user_profile):
                         st.markdown(f"<p><span class='highlight'>Region:</span> {meal['State']}</p>", unsafe_allow_html=True)
                         st.markdown("</div>", unsafe_allow_html=True)
     
-    # Display nutritional summary
+    
     stats = calculate_stats(meal_plan)
     st.markdown("<h2 class='section-header'>Nutritional Summary (Daily Average)</h2>", unsafe_allow_html=True)
     
@@ -299,10 +234,10 @@ def display_meal_plan(meal_plan, user_profile):
         st.markdown(f"<p><span class='highlight'>Sugar:</span> {stats['Total Sugar']:.1f} g</p>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
     
-    # Display macronutrient distribution chart
+    
     st.markdown("<h2 class='section-header'>Macronutrient Distribution</h2>", unsafe_allow_html=True)
     
-    # Calculate macronutrient percentages
+   
     protein_cals = stats["Total Protein"] * 4
     carb_cals = stats["Total Carbs"] * 4
     fat_cals = stats["Total Fat"] * 9
@@ -314,7 +249,7 @@ def display_meal_plan(meal_plan, user_profile):
         carb_pct = (carb_cals / total_cals) * 100
         fat_pct = (fat_cals / total_cals) * 100
         
-        # Create a pie chart
+        
         fig, ax = plt.subplots(figsize=(8, 5))
         labels = ['Protein', 'Carbohydrates', 'Fat']
         sizes = [protein_pct, carb_pct, fat_pct]
@@ -326,7 +261,7 @@ def display_meal_plan(meal_plan, user_profile):
         
         st.pyplot(fig)
     
-    # Display recommendations based on user's goals
+    
     st.markdown("<h2 class='section-header'>Recommendations Based on Your Goals</h2>", unsafe_allow_html=True)
     
     if user_profile['goal'] == 'Weight Loss':
@@ -362,23 +297,18 @@ def display_meal_plan(meal_plan, user_profile):
         🔹 Regular physical activity, quality sleep, and stress management are key components of health.
         """)
 
-# Main application
+
 def main():
-    # Header
+    
     st.markdown("<h1 class='main-header'>NutriSmart</h1>", unsafe_allow_html=True)
     st.markdown("<p class='sub-header'>Your Personalized Indian Cuisine Nutrition Planner</p>", unsafe_allow_html=True)
     
-    # Load the dataset
+  
     df = load_data()
     
-    if df is None:
-        st.error("Failed to load the dataset. Please try again later.")
-        return
     
-    # Sidebar for user inputs
     st.sidebar.markdown("<h2>Your Information</h2>", unsafe_allow_html=True)
-    
-    # User profile
+ 
     age = st.sidebar.slider("Age", min_value=18, max_value=80, value=30)
     gender = st.sidebar.selectbox("Gender", ["Male", "Female", "Other"])
     weight = st.sidebar.number_input("Weight (kg)", min_value=40.0, max_value=150.0, value=70.0, step=0.1)
@@ -389,11 +319,11 @@ def main():
         value="Moderately Active"
     )
     
-    # Health goals
+   
     st.sidebar.markdown("<h2>Health Goals</h2>", unsafe_allow_html=True)
     goal = st.sidebar.selectbox("Primary Goal", ["Weight Loss", "Muscle Gain", "Maintenance", "Improve Health"])
     
-    # Calculate BMR and daily calorie needs
+   
     if gender == "Male":
         bmr = 10 * weight + 6.25 * height - 5 * age + 5
     else:
@@ -409,7 +339,7 @@ def main():
     
     maintenance_calories = bmr * activity_factors[activity_level]
     
-    # Adjust calories based on goal
+   
     if goal == "Weight Loss":
         recommended_calories = maintenance_calories * 0.8
     elif goal == "Muscle Gain":
@@ -417,7 +347,7 @@ def main():
     else:
         recommended_calories = maintenance_calories
     
-    # Calculate macronutrient goals
+    
     if goal == "Weight Loss":
         protein_pct = 0.35
         fat_pct = 0.3
@@ -431,31 +361,19 @@ def main():
         fat_pct = 0.3
         carb_pct = 0.45
     
-    protein_goal = (recommended_calories * protein_pct) / 4  # 4 calories per gram of protein
-    fat_goal = (recommended_calories * fat_pct) / 9  # 9 calories per gram of fat
-    carb_goal = (recommended_calories * carb_pct) / 4  # 4 calories per gram of carbs
-    fiber_goal = 25  # General recommendation
-    sugar_goal = 25  # General recommendation
+    protein_goal = (recommended_calories * protein_pct) / 4  
+    fat_goal = (recommended_calories * fat_pct) / 9  
+    carb_goal = (recommended_calories * carb_pct) / 4  
+    fiber_goal = 25  
+    sugar_goal = 25  
     
-    # Display recommendations
     st.sidebar.markdown("<h3>Recommended Daily Intake</h3>", unsafe_allow_html=True)
     st.sidebar.markdown(f"<p><span class='highlight'>Calories:</span> {recommended_calories:.0f} kcal</p>", unsafe_allow_html=True)
     st.sidebar.markdown(f"<p><span class='highlight'>Protein:</span> {protein_goal:.0f} g</p>", unsafe_allow_html=True)
     st.sidebar.markdown(f"<p><span class='highlight'>Fat:</span> {fat_goal:.0f} g</p>", unsafe_allow_html=True)
     st.sidebar.markdown(f"<p><span class='highlight'>Carbs:</span> {carb_goal:.0f} g</p>", unsafe_allow_html=True)
     
-    # Advanced nutrition settings
-    show_advanced = st.sidebar.checkbox("Show Advanced Nutrition Settings")
-    
-    if show_advanced:
-        st.sidebar.markdown("<h3>Advanced Nutrition Settings</h3>", unsafe_allow_html=True)
-        protein_goal = st.sidebar.number_input("Protein (g)", min_value=0.0, max_value=300.0, value=protein_goal, step=5.0)
-        fat_goal = st.sidebar.number_input("Fat (g)", min_value=0.0, max_value=200.0, value=fat_goal, step=5.0)
-        carb_goal = st.sidebar.number_input("Carbohydrates (g)", min_value=0.0, max_value=500.0, value=carb_goal, step=5.0)
-        fiber_goal = st.sidebar.number_input("Fiber (g)", min_value=0.0, max_value=100.0, value=fiber_goal, step=1.0)
-        sugar_goal = st.sidebar.number_input("Sugar (g)", min_value=0.0, max_value=100.0, value=sugar_goal, step=1.0)
-    
-    # Dietary preferences
+   
     st.sidebar.markdown("<h2>Dietary Preferences</h2>", unsafe_allow_html=True)
     dietary_preferences = st.sidebar.multiselect(
         "Select your dietary preferences",
@@ -463,15 +381,15 @@ def main():
         default=["Vegetarian", "Non-Vegetarian"]
     )
     
-    # Food exclusions
+   
     st.sidebar.markdown("<h2>Food Exclusions</h2>", unsafe_allow_html=True)
     excluded_ingredients = st.sidebar.text_input("Ingredients to exclude (comma-separated)", "")
     excluded_ingredients = [item.strip() for item in excluded_ingredients.split(",") if item.strip()]
     
-    # Number of days for meal plan
+   
     days = st.sidebar.slider("Number of Days for Meal Plan", min_value=1, max_value=7, value=3)
     
-    # User profile for recommendation
+   
     user_profile = {
         "age": age,
         "gender": gender,
@@ -479,18 +397,18 @@ def main():
         "height": height,
         "activity_level": activity_level,
         "goal": goal,
-        "calorie_goal": recommended_calories / 3,  # Per meal
-        "protein_goal": protein_goal / 3,  # Per meal
-        "fat_goal": fat_goal / 3,  # Per meal
-        "carb_goal": carb_goal / 3,  # Per meal
-        "fiber_goal": fiber_goal / 3,  # Per meal
-        "sugar_goal": sugar_goal / 3  # Per meal
+        "calorie_goal": recommended_calories / 3,  
+        "protein_goal": protein_goal / 3,  
+        "fat_goal": fat_goal / 3,  
+        "carb_goal": carb_goal / 3,  
+        "fiber_goal": fiber_goal / 3,  
+        "sugar_goal": sugar_goal / 3  
     }
     
-    # Generate recommendations button
+   
     if st.sidebar.button("Generate Meal Plan"):
         with st.spinner("Generating your personalized meal plan..."):
-            # Get recommendations
+            
             recommendations = get_recommendations(
                 df, user_profile, dietary_preferences, excluded_ingredients, n_recommendations=days * 4
             )
@@ -498,29 +416,29 @@ def main():
             if recommendations is None or len(recommendations) == 0:
                 st.error("No recommendations found based on your preferences. Please adjust your filters and try again.")
             else:
-                # Create meal plan
+                
                 meal_plan = create_meal_plan(recommendations, days=days)
                 
-                # Display meal plan
+                
                 display_meal_plan(meal_plan, user_profile)
     else:
-        # Show app intro
+       
         col1, col2 = st.columns([3, 2])
         
         with col1:
             st.markdown("""
             ## Welcome to NutriSmart!
             
-            NutriSmart is your personalized nutrition planner specialized in Indian cuisine. Our AI-powered system provides customized meal recommendations based on your health goals, dietary preferences, and nutritional requirements.
+            NutriSmart is your personalized nutrition planner specialized in Indian cuisine which will give you customized meal recommendations based on your health goals, dietary preferences, and nutritional requirements.
             
-            ### How it works:
+            ### How to use this meal planner:
             
             1. Enter your personal details in the sidebar
             2. Set your health goals and dietary preferences
             3. Specify any ingredients you want to exclude
             4. Click "Generate Meal Plan" to receive your personalized recommendations
             
-            Our recommendations are based on a comprehensive database of Indian dishes with detailed nutritional information.
+            The recommendations are based on a comprehensive database of Indian dishes with detailed nutritional information.
             
             ### Benefits:
             
@@ -547,15 +465,16 @@ def main():
             ### Dataset Overview:
             """)
             
-            # Display dataset information
+           
             st.write(f"Total Dishes: {len(df)}")
             st.write(f"Vegetarian Dishes: {len(df[df['Diet'] == 'vegetarian'])}")
             st.write(f"Non-Vegetarian Dishes: {len(df[df['Diet'] == 'non vegetarian'])}")
             
-            # Display sample dishes
+           
             st.markdown("### Sample Dishes:")
             for i, row in df.sample(3).iterrows():
                 st.write(f"- {row['Name']} ({row['State']})")
 
 if __name__ == "__main__":
     main()
+

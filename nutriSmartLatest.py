@@ -387,7 +387,7 @@ def main():
     excluded_ingredients = [item.strip() for item in excluded_ingredients.split(",") if item.strip()]
     
    
-    days = st.sidebar.slider("Number of Days for Meal Plan", min_value=1, max_value=7, value=3)
+    days = st.sidebar.slider("Number of Days for Meal Plan", min_value=1, max_value=3, value=3)
     
    
     user_profile = {
@@ -477,4 +477,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

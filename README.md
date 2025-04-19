@@ -25,12 +25,10 @@ Includes a diverse list of Indian dishes.<br>
 # 🛠 Tech Stack<br>
 Frontend & App: Streamlit<br>
 
-# Backend & Logic: 
-<br>
+# Backend & Logic: <br>
 Python (Pandas, NumPy, Scikit-learn)<br>
 
-# Data: 
-<br>
+# Data: <br>
 Sample dataset of Indian food items with nutritional values<br>
 
 # ⚙️ How It Works<br>

@@ -45,12 +45,11 @@ Generate Meal Plan:<br>
 Based on the recommendations, a balanced 3-day meal plan is created with visual summaries.<br>
 <br>
 <br>
-<br>
-# FOLDER STRUCTURE: 
-nutrismart/ 
-├── app.py              # Main Streamlit app
-├── requirements.txt    # Python dependencies
-├── README.md           # Project documentation
+# FOLDER STRUCTURE:<br>
+nutrismart/ <br>
+├── app.py              # Main Streamlit app<br>
+├── requirements.txt    # Python dependencies<br>
+├── README.md           # Project documentation<br>
 
 # STEPS TO RUN: <br>
 1. Clone this repository. <br>

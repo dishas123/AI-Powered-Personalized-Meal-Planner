@@ -1,4 +1,4 @@
-## 🥗 NutriSmart<br>
+# 🥗 NutriSmart<br>
 NutriSmart is a personalized meal planning application built with Streamlit that recommends Indian dishes based on your nutritional goals and dietary preferences. <br>
 It helps you plan balanced meals while considering ingredient exclusions and provides a nutritional summary of your meal plan.<br>
 <br>
@@ -25,9 +25,13 @@ Includes a diverse list of Indian dishes.<br>
 # 🛠 Tech Stack<br>
 Frontend & App: Streamlit<br>
 
-# Backend & Logic: Python (Pandas, NumPy, Scikit-learn)<br>
+# Backend & Logic: 
+<br>
+Python (Pandas, NumPy, Scikit-learn)<br>
 
-# Data: Sample dataset of Indian food items with nutritional values<br>
+# Data: 
+<br>
+Sample dataset of Indian food items with nutritional values<br>
 
 # ⚙️ How It Works<br>
 Input Your Goals:<br>

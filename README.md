@@ -46,12 +46,19 @@ Based on the recommendations, a balanced 3-day meal plan is created with visual 
 <br>
 <br>
 <br>
+# FOLDER STRUCTURE: 
+nutrismart/ 
+├── app.py              # Main Streamlit app
+├── requirements.txt    # Python dependencies
+├── README.md           # Project documentation
 
 # STEPS TO RUN: <br>
 1. Clone this repository. <br>
 In order to clone this repository open a terminal and type <br>
 git clone https://github.com/dishas123/AI-Powered-Personalized-Meal-Planner.git <br>
 Navigate to the cloned folder on the terminal in your system.  <br>
+Install the dependencies <br>
+pip install streamlit pandas numpy scikit-learn matplotlib seaborn Pillow <br>
 Then type :  <br>
 streamlit run foodnew.py  <br>
 Output screenshots of the website :<br>
